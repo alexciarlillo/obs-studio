@@ -250,17 +250,22 @@ configure_obs_build() {
     ensure_dir "${CHECKOUT_DIR}/${BUILD_DIR}"
 
     hr "Run CMAKE for OBS..."
-    cmake -DENABLE_SPARKLE_UPDATER=ON \
-        -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 \
+    cmake -DENABLE_SPARKLE_UPDATER=OFF \
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
         -DDISABLE_PYTHON=ON  \
         -DQTDIR="/tmp/obsdeps" \
         -DSWIGDIR="/tmp/obsdeps" \
         -DDepsPath="/tmp/obsdeps" \
         -DVLCPath="${DEPS_BUILD_DIR}/vlc-${VLC_VERSION:-${CI_VLC_VERSION}}" \
+        -DWEBRTC_ROOT_DIR=/Users/alexciarlillo/code/src/googlesource/webrtc-checkout \
+        -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1 \
+        -DOPENSSL_CRYPTO_LIBRARY=/usr/local/opt/openssl@1.1/lib/libcrypto.dylib \
+        -DBUILD_CPR_TESTS=OFF \
+        -DUSE_SYSTEM_CURL=ON \
         -DBUILD_BROWSER=ON \
-        -DBROWSER_DEPLOY=ON \
-        -DBUILD_CAPTIONS=ON \
-        -DWITH_RTMPS=ON \
+        -DBROWSER_DEPLOY=OFF \
+        -DBUILD_CAPTIONS=OFF \
+        -DWITH_RTMPS=OFF \
         -DCEF_ROOT_DIR="${DEPS_BUILD_DIR}/cef_binary_${CEF_BUILD_VERSION:-${CI_CEF_VERSION}}_macosx64" \
         ..
 

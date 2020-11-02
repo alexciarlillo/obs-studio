@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string>
 #include <algorithm>
 #include <QMessageBox>
@@ -7,6 +8,8 @@
 #include "window-basic-main-outputs.hpp"
 
 using namespace std;
+
+#define info(format, ...)  blog(LOG_INFO,    format, ##__VA_ARGS__)
 
 extern bool EncoderAvailable(const char *encoder);
 
@@ -729,6 +732,7 @@ const char *FindAudioEncoderFromCodec(const char *type)
 
 bool SimpleOutput::SetupStreaming(obs_service_t *service)
 {
+	info("SimpleOutput::SetupStreaming");
 	if (!Active())
 		SetupOutputs();
 
@@ -739,14 +743,22 @@ bool SimpleOutput::SetupStreaming(obs_service_t *service)
 	/* --------------------- */
 
 	const char *type = obs_service_get_output_type(service);
+	string typeCheck = obs_service_get_type(service);
+
 	if (!type) {
-		type = "rtmp_output";
-		const char *url = obs_service_get_url(service);
-		if (url != NULL &&
-		    strncmp(url, RTMP_PROTOCOL, strlen(RTMP_PROTOCOL)) != 0) {
-			type = "ffmpeg_mpegts_muxer";
+		if (typeCheck.find("mediasoup") != string::npos) {
+			type = "mediasoup_output";
+		} else {
+			type = "rtmp_output";
+			const char *url = obs_service_get_url(service);
+			if (url != NULL &&
+			    strncmp(url, RTMP_PROTOCOL, strlen(RTMP_PROTOCOL)) != 0) {
+				type = "ffmpeg_mpegts_muxer";
+			}
 		}
 	}
+
+	info("outputType %s, type %s", outputType.c_str(), type);
 
 	/* XXX: this is messy and disgusting and should be refactored */
 	if (outputType != type) {
@@ -863,7 +875,9 @@ bool SimpleOutput::StartStreaming(obs_service_t *service)
 
 	obs_output_set_reconnect_settings(streamOutput, maxRetries, retryDelay);
 
+	info("SimpleOutput::StartStreaming obs_output_start");
 	if (obs_output_start(streamOutput)) {
+		info("SimpleOutput::StartStreaming obs_output_start-ed");
 		return true;
 	}
 
@@ -1526,12 +1540,18 @@ bool AdvancedOutput::SetupStreaming(obs_service_t *service)
 	/* --------------------- */
 
 	const char *type = obs_service_get_output_type(service);
+	string typeCheck = obs_service_get_type(service);
+
 	if (!type) {
-		type = "rtmp_output";
-		const char *url = obs_service_get_url(service);
-		if (url != NULL &&
-		    strncmp(url, RTMP_PROTOCOL, strlen(RTMP_PROTOCOL)) != 0) {
-			type = "ffmpeg_mpegts_muxer";
+		if (typeCheck.find("mediasoup") != string::npos) {
+			type = "mediasoup_output";
+		} else {
+			type = "rtmp_output";
+			const char *url = obs_service_get_url(service);
+			if (url != NULL &&
+			    strncmp(url, RTMP_PROTOCOL, strlen(RTMP_PROTOCOL)) != 0) {
+				type = "ffmpeg_mpegts_muxer";
+			}
 		}
 	}
 
@@ -1611,6 +1631,7 @@ bool AdvancedOutput::SetupStreaming(obs_service_t *service)
 
 bool AdvancedOutput::StartStreaming(obs_service_t *service)
 {
+	info("AdvancedOutput::StartStreaming");
 	obs_output_set_service(streamOutput, service);
 
 	bool reconnect = config_get_bool(main->Config(), "Output", "Reconnect");

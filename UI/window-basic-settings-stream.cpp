@@ -22,6 +22,7 @@ extern QCefCookieManager *panel_cookies;
 enum class ListOpt : int {
 	ShowAll = 1,
 	Custom,
+	Mediasoup
 };
 
 enum class Section : int {
@@ -32,6 +33,11 @@ enum class Section : int {
 inline bool OBSBasicSettings::IsCustomService() const
 {
 	return ui->service->currentData().toInt() == (int)ListOpt::Custom;
+}
+
+inline bool OBSBasicSettings::IsMediasoupService() const
+{
+	return ui->service->currentData().toInt() == (int)ListOpt::Mediasoup;
 }
 
 void OBSBasicSettings::InitStreamPage()
@@ -102,6 +108,26 @@ void OBSBasicSettings::LoadStream1Settings()
 		ui->authUsername->setText(QT_UTF8(username));
 		ui->authPw->setText(QT_UTF8(password));
 		ui->useAuth->setChecked(use_auth);
+	} else if (strcmp(type, "webrtc_mediasoup") == 0) {
+		int idx = ui->service->findText(service);
+		if (idx == -1) {
+			if (service && *service)
+				ui->service->insertItem(1, service);
+			idx = 1;
+		}
+		ui->service->setCurrentIndex(idx);
+
+		ui->customServer->setText(server);
+
+		bool use_auth = obs_data_get_bool(settings, "use_auth");
+		const char *username =
+			obs_data_get_string(settings, "username");
+		const char *password =
+			obs_data_get_string(settings, "password");
+		ui->authUsername->setText(QT_UTF8(username));
+		ui->authPw->setText(QT_UTF8(password));
+		ui->useAuth->setChecked(use_auth);
+
 	} else {
 		int idx = ui->service->findText(service);
 		if (idx == -1) {
@@ -147,8 +173,15 @@ void OBSBasicSettings::LoadStream1Settings()
 
 void OBSBasicSettings::SaveStream1Settings()
 {
+	bool mediasoup = IsMediasoupService();
 	bool customServer = IsCustomService();
-	const char *service_id = customServer ? "rtmp_custom" : "rtmp_common";
+	const char *service_id;
+
+	if (mediasoup) {
+		service_id = "webrtc_mediasoup";
+	 } else {
+	 	service_id = customServer ? "rtmp_custom" : "rtmp_common";
+	}
 
 	obs_service_t *oldService = main->GetService();
 	OBSData hotkeyData = obs_hotkeys_save_service(oldService);
@@ -157,13 +190,9 @@ void OBSBasicSettings::SaveStream1Settings()
 	OBSData settings = obs_data_create();
 	obs_data_release(settings);
 
-	if (!customServer) {
+	if (mediasoup) {
 		obs_data_set_string(settings, "service",
 				    QT_TO_UTF8(ui->service->currentText()));
-		obs_data_set_string(
-			settings, "server",
-			QT_TO_UTF8(ui->server->currentData().toString()));
-	} else {
 		obs_data_set_string(settings, "server",
 				    QT_TO_UTF8(ui->customServer->text()));
 		obs_data_set_bool(settings, "use_auth",
@@ -175,7 +204,25 @@ void OBSBasicSettings::SaveStream1Settings()
 			obs_data_set_string(settings, "password",
 					    QT_TO_UTF8(ui->authPw->text()));
 		}
-	}
+	} else if (customServer) {
+		obs_data_set_string(settings, "server",
+				    QT_TO_UTF8(ui->customServer->text()));
+		obs_data_set_bool(settings, "use_auth",
+				  ui->useAuth->isChecked());
+		if (ui->useAuth->isChecked()) {
+			obs_data_set_string(
+				settings, "username",
+				QT_TO_UTF8(ui->authUsername->text()));
+			obs_data_set_string(settings, "password",
+					    QT_TO_UTF8(ui->authPw->text()));
+		}
+	} else {
+			obs_data_set_string(settings, "service",
+		    QT_TO_UTF8(ui->service->currentText()));
+			obs_data_set_string(
+				settings, "server",
+				QT_TO_UTF8(ui->server->currentData().toString()));
+		}
 
 	if (!!auth && strcmp(auth->service(), "Twitch") == 0) {
 		bool choiceExists = config_has_user_value(
@@ -269,6 +316,7 @@ void OBSBasicSettings::LoadServices(bool showAll)
 		names.push_back(name);
 	}
 
+
 	if (showAll)
 		names.sort(Qt::CaseInsensitive);
 
@@ -280,6 +328,8 @@ void OBSBasicSettings::LoadServices(bool showAll)
 			QTStr("Basic.AutoConfig.StreamPage.Service.ShowAll"),
 			QVariant((int)ListOpt::ShowAll));
 	}
+
+	ui->service->insertItem(1, obs_service_get_display_name("webrtc_mediasoup"), QVariant((int)ListOpt::Mediasoup));
 
 	ui->service->insertItem(
 		0, QTStr("Basic.AutoConfig.StreamPage.Service.Custom"),
@@ -310,6 +360,7 @@ void OBSBasicSettings::on_service_currentIndexChanged(int)
 
 	std::string service = QT_TO_UTF8(ui->service->currentText());
 	bool custom = IsCustomService();
+	bool mediasoup = IsMediasoupService();
 
 	ui->disconnectAccount->setVisible(false);
 	ui->bandwidthTestEnable->setVisible(false);
@@ -343,7 +394,7 @@ void OBSBasicSettings::on_service_currentIndexChanged(int)
 	ui->authPwLabel->setVisible(custom);
 	ui->authPwWidget->setVisible(custom);
 
-	if (custom) {
+	if (custom || mediasoup) {
 		ui->streamkeyPageLayout->insertRow(1, ui->serverLabel,
 						   ui->serverStackedWidget);
 
@@ -428,7 +479,14 @@ void OBSBasicSettings::on_authPwShow_clicked()
 OBSService OBSBasicSettings::SpawnTempService()
 {
 	bool custom = IsCustomService();
-	const char *service_id = custom ? "rtmp_custom" : "rtmp_common";
+	bool mediasoup = IsMediasoupService();
+	const char *service_id;
+
+	if (mediasoup) {
+		service_id = "webrtc_mediasoup";
+	} else {
+	 service_id = custom ? "rtmp_custom" : "rtmp_common";
+	}
 
 	OBSData settings = obs_data_create();
 	obs_data_release(settings);
