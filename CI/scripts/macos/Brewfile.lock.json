@@ -1,0 +1,158 @@
+{
+  "entries": {
+    "tap": {
+      "akeru-inc/tap": {
+        "revision": "61d91652fc3df8494447dafb7f5527ab49cbc372"
+      }
+    },
+    "brew": {
+      "jack": {
+        "version": "0.125.0_4",
+        "bottle": {
+          "cellar": "/usr/local/Cellar",
+          "prefix": "/usr/local",
+          "files": {
+            "catalina": {
+              "url": "https://homebrew.bintray.com/bottles/jack-0.125.0_4.catalina.bottle.tar.gz",
+              "sha256": "69f9c5215e993b4b6eee2b31b3585d4df92160ec162a433df76a4a66e9f72b71"
+            },
+            "mojave": {
+              "url": "https://homebrew.bintray.com/bottles/jack-0.125.0_4.mojave.bottle.tar.gz",
+              "sha256": "fc489e40c89bfe3315b7d9f6dc1f243aeb03e57741faeb7b4b8f8adfc769c0a7"
+            },
+            "high_sierra": {
+              "url": "https://homebrew.bintray.com/bottles/jack-0.125.0_4.high_sierra.bottle.tar.gz",
+              "sha256": "169ce5413c397a9cea4d346fd33d5120f1411d92105f39722b2ae8c9ebd881df"
+            }
+          }
+        }
+      },
+      "speexdsp": {
+        "version": "1.2.0",
+        "bottle": {
+          "cellar": ":any",
+          "prefix": "/usr/local",
+          "files": {
+            "catalina": {
+              "url": "https://homebrew.bintray.com/bottles/speexdsp-1.2.0.catalina.bottle.tar.gz",
+              "sha256": "84c7225a9ee78c41bd858d8b52d01a12db6ba358826e45bdc30e42d9e802425c"
+            },
+            "mojave": {
+              "url": "https://homebrew.bintray.com/bottles/speexdsp-1.2.0.mojave.bottle.tar.gz",
+              "sha256": "0d61efd09b255e0856833e51bdbdaabcaaa325824a71ec326da61ffd8e200675"
+            },
+            "high_sierra": {
+              "url": "https://homebrew.bintray.com/bottles/speexdsp-1.2.0.high_sierra.bottle.tar.gz",
+              "sha256": "7473fce6835c55f0547e60ff32b9ee1d16c2d3a490f618310dd276e34126bd1f"
+            },
+            "sierra": {
+              "url": "https://homebrew.bintray.com/bottles/speexdsp-1.2.0.sierra.bottle.tar.gz",
+              "sha256": "b96155ea177b81d37a86a9b57dc38643680bbf6b22a6a2b826734f3cb2b5aa93"
+            }
+          }
+        }
+      },
+      "cmake": {
+        "version": "3.18.4",
+        "bottle": {
+          "cellar": ":any_skip_relocation",
+          "prefix": "/usr/local",
+          "files": {
+            "catalina": {
+              "url": "https://homebrew.bintray.com/bottles/cmake-3.18.4.catalina.bottle.tar.gz",
+              "sha256": "c7c42e66c63448e4aee44498b374c9985f477b129fccca5dd9c13530d1e680ef"
+            },
+            "mojave": {
+              "url": "https://homebrew.bintray.com/bottles/cmake-3.18.4.mojave.bottle.tar.gz",
+              "sha256": "a0b167ad7f2fbf6f6dbcca9d74cb09acbd7822c54873803e940abf04272f8028"
+            },
+            "high_sierra": {
+              "url": "https://homebrew.bintray.com/bottles/cmake-3.18.4.high_sierra.bottle.tar.gz",
+              "sha256": "98704ab50ed76df9214083c01e373277ba02aad43c858182be7ed1466d005326"
+            }
+          }
+        }
+      },
+      "freetype": {
+        "version": "2.10.1",
+        "bottle": {
+          "cellar": ":any",
+          "prefix": "/usr/local",
+          "files": {
+            "catalina": {
+              "url": "https://homebrew.bintray.com/bottles/freetype-2.10.4.catalina.bottle.tar.gz",
+              "sha256": "b4e7683ae202c49280024faac4ac7437e690cb5dd83edb806fac368bc2b7de35"
+            },
+            "mojave": {
+              "url": "https://homebrew.bintray.com/bottles/freetype-2.10.4.mojave.bottle.tar.gz",
+              "sha256": "81c65539bcc98d171fdff7a6e80cdddd7dc4bc9ed34e739c4361ab66f3391991"
+            },
+            "high_sierra": {
+              "url": "https://homebrew.bintray.com/bottles/freetype-2.10.4.high_sierra.bottle.tar.gz",
+              "sha256": "666892404720bcd855d866976e1cb9beecc3151ca595c3dd115a0daa6bb6c7e1"
+            }
+          }
+        }
+      },
+      "fdk-aac": {
+        "version": "2.0.1",
+        "bottle": {
+          "cellar": ":any",
+          "prefix": "/usr/local",
+          "files": {
+            "catalina": {
+              "url": "https://homebrew.bintray.com/bottles/fdk-aac-2.0.1.catalina.bottle.tar.gz",
+              "sha256": "526c83a79b7f208f07e8d04ad5ce47c8104d90a76034e42422d124fba128ba3c"
+            },
+            "mojave": {
+              "url": "https://homebrew.bintray.com/bottles/fdk-aac-2.0.1.mojave.bottle.tar.gz",
+              "sha256": "9353da38e4b43913964f9cdc5fc2a28c4b6c0a19ceef4e2a58db62ba3fdb4d49"
+            },
+            "high_sierra": {
+              "url": "https://homebrew.bintray.com/bottles/fdk-aac-2.0.1.high_sierra.bottle.tar.gz",
+              "sha256": "a8812e355f28272c7d8153bcda0e48a58c0bd0a880ed0256a2bc460143d1df78"
+            }
+          }
+        }
+      },
+      "cmocka": {
+        "version": "1.1.5",
+        "bottle": {
+          "cellar": ":any",
+          "prefix": "/usr/local",
+          "files": {
+            "catalina": {
+              "url": "https://homebrew.bintray.com/bottles/cmocka-1.1.5.catalina.bottle.tar.gz",
+              "sha256": "719b81c50a85d95dfc0bdd88b52e5642cc81e22f95776fc8d92065217bef879e"
+            },
+            "mojave": {
+              "url": "https://homebrew.bintray.com/bottles/cmocka-1.1.5.mojave.bottle.tar.gz",
+              "sha256": "a05bfdbe08b08dc01db59d0c2c724b2a58c4f9e12c260dc5865e27dd456e7771"
+            },
+            "high_sierra": {
+              "url": "https://homebrew.bintray.com/bottles/cmocka-1.1.5.high_sierra.bottle.tar.gz",
+              "sha256": "c4fc9fe8a73b23206c0db8907c2f67dea482d689afea18c5e746556aff8098b5"
+            },
+            "sierra": {
+              "url": "https://homebrew.bintray.com/bottles/cmocka-1.1.5.sierra.bottle.tar.gz",
+              "sha256": "a8d32491c7cfd1670be11c022faa07619d7821a4328fb034e76f225933b5c4dc"
+            }
+          }
+        }
+      },
+      "akeru-inc/tap/xcnotary": null
+    }
+  },
+  "system": {
+    "macos": {
+      "catalina": {
+        "HOMEBREW_VERSION": "2.5.8",
+        "HOMEBREW_PREFIX": "/usr/local",
+        "Homebrew/homebrew-core": "ee5e6928a954de2ffda16d49d438d2e0319c5921",
+        "CLT": "11.5.0.0.1.1588476445",
+        "Xcode": "12.0.1",
+        "macOS": "10.15.5"
+      }
+    }
+  }
+}

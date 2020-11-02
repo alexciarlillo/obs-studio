@@ -84,6 +84,38 @@ configure_file(
 
 include_directories("${CMAKE_BINARY_DIR}/plugins/obs-outputs/config")
 
+#------------------------------------------------------------------------
+# WebRTC
+#
+if(WIN32)
+	set(WEBRTC_USE_FILE_INCLUDED 0)
+endif()
+
+message( STATUS "Looking for libwebrtc" )
+# CoSMo libwebrtc package has versioning and COMPONENTS
+find_package(LibWebRTC 84 QUIET COMPONENTS H264 )
+  if( NOT libwebrtc_FOUND )
+    # A FindLibWebRTC package is also provided in the repository for self-compiled libwebrtc
+    find_package(LibWebRTC REQUIRED)
+  endif()
+message( STATUS "Looking for libwebrtc - found" )
+if( WEBRTC_H264_FOUND )
+        message( STATUS "This libwebrtc package was built with H264 support." )
+endif()
+if( WEBRTC_EXT_OPENSSL_FOUND )
+        message( STATUS "This libwebrtc package was built against openssl." )
+endif()
+if( WEBRTC_EXT_LIBSRTP_FOUND )
+        message( STATUS "This libwebrtc package was built with external libsrtp." )
+endif()
+if( WEBRTC_SFRAME_FOUND )
+        message( STATUS "This libwebrtc package was build with SFrame end-to-end encryption." )
+endif()
+if( WEBRTC_ADVERTISE_MULTIOPUS_CODEC )
+        message( STATUS "This libwebrtc package was build with built-in multiopus codec." )
+endif()
+
+
 if(WIN32)
 	set(obs-outputs_PLATFORM_DEPS
 		ws2_32
@@ -139,6 +171,26 @@ if(NOT WIN32)
 		COMPILE_FLAGS "-fvisibility=hidden")
 endif()
 
+set(obs-outputs_webrtc_HEADERS
+	AudioDeviceModuleWrapper.h
+	mediasoup-stream.h
+	webrtc-custom-stream.h
+        obsWebrtcAudioSource.h
+	VideoCapturer.h
+	WebRTCStream.h)
+set(obs-outputs_webrtc_SOURCES
+	AudioDeviceModuleWrapper.cpp
+	mediasoup-stream.cpp
+	webrtc-custom-stream.cpp
+        obsWebrtcAudioSource.cpp
+	VideoCapturer.cpp
+	WebRTCStream.cpp)
+
+if(NOT WIN32)
+	set_source_files_properties(${obs-outputs_webrtc_SOURCES} PROPERTIES
+		COMPILE_FLAGS "-fvisibility=hidden")
+endif()
+
 set(obs-outputs_HEADERS
 	"${CMAKE_BINARY_DIR}/plugins/obs-outputs/config/obs-outputs-config.h"
 	obs-output-ver.h
@@ -168,10 +220,14 @@ add_library(obs-outputs MODULE
 	${obs-outputs_SOURCES}
 	${obs-outputs_HEADERS}
 	${obs-outputs_librtmp_SOURCES}
-	${obs-outputs_librtmp_HEADERS})
+	${obs-outputs_librtmp_HEADERS}
+	${obs-outputs_webrtc_SOURCES}
+	${obs-outputs_webrtc_HEADERS})
+
 target_link_libraries(obs-outputs
 	libobs
 	${MBEDTLS_LIBRARIES}
+	${WEBRTC_LIBRARIES}
 	${ZLIB_LIBRARIES}
 	${ftl_IMPORTS}
 	${obs-outputs_PLATFORM_DEPS})
