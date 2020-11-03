@@ -92,13 +92,11 @@ if(WIN32)
 endif()
 
 message( STATUS "Looking for libwebrtc" )
-# CoSMo libwebrtc package has versioning and COMPONENTS
-find_package(LibWebRTC 84 QUIET COMPONENTS H264 )
-  if( NOT libwebrtc_FOUND )
-    # A FindLibWebRTC package is also provided in the repository for self-compiled libwebrtc
-    find_package(LibWebRTC REQUIRED)
-  endif()
+find_package(LibWebRTC REQUIRED)
 message( STATUS "Looking for libwebrtc - found" )
+message( STATUS "Looking for libmediasoupclient" )
+find_package(LibMediasoupClient REQUIRED)
+message( STATUS "Looking for libmediasoupclient - found" )
 if( WEBRTC_H264_FOUND )
         message( STATUS "This libwebrtc package was built with H264 support." )
 endif()
@@ -114,6 +112,10 @@ endif()
 if( WEBRTC_ADVERTISE_MULTIOPUS_CODEC )
         message( STATUS "This libwebrtc package was build with built-in multiopus codec." )
 endif()
+
+
+include_directories(${WEBRTC_INCLUDE_DIRS})
+# include_directories(${LIBMEDIASOUPCLIENT_INCLUDE_DIRS})
 
 
 if(WIN32)
@@ -173,18 +175,16 @@ endif()
 
 set(obs-outputs_webrtc_HEADERS
 	AudioDeviceModuleWrapper.h
-	mediasoup-stream.h
-	webrtc-custom-stream.h
-        obsWebrtcAudioSource.h
+	obsWebrtcAudioSource.h
 	VideoCapturer.h
-	WebRTCStream.h)
+	Broadcaster.h
+	MediaStreamTrackFactory.h)
 set(obs-outputs_webrtc_SOURCES
 	AudioDeviceModuleWrapper.cpp
-	mediasoup-stream.cpp
-	webrtc-custom-stream.cpp
-        obsWebrtcAudioSource.cpp
+	obsWebrtcAudioSource.cpp
 	VideoCapturer.cpp
-	WebRTCStream.cpp)
+	Broadcaster.cpp
+	MediaStreamTrackFactory.cpp)
 
 if(NOT WIN32)
 	set_source_files_properties(${obs-outputs_webrtc_SOURCES} PROPERTIES
@@ -228,6 +228,7 @@ target_link_libraries(obs-outputs
 	libobs
 	${MBEDTLS_LIBRARIES}
 	${WEBRTC_LIBRARIES}
+	${LIBMEDIASOUPCLIENT_LIBRARIES}
 	${ZLIB_LIBRARIES}
 	${ftl_IMPORTS}
 	${obs-outputs_PLATFORM_DEPS})

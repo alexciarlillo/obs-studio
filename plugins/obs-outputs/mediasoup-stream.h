@@ -18,8 +18,10 @@
 #include <sys/ioctl.h>
 #endif
 
+#include "Broadcaster.h"
+
 #define do_log(level, format, ...) \
-	blog(level, "[wowza stream: '%s'] " format, \
+	blog(level, "[mediasoup stream: '%s'] " format, \
 		obs_output_get_name(stream->output), ##__VA_ARGS__)
 
 #define warn(format, ...) do_log(LOG_WARNING, format, ##__VA_ARGS__)
@@ -44,7 +46,7 @@ struct droptest_info {
 };
 #endif
 
-struct wowza_stream {
+struct mediasoup_stream {
 	obs_output_t     *output;
 
 	pthread_mutex_t  packets_mutex;

@@ -256,6 +256,8 @@ configure_obs_build() {
         -DQTDIR="/tmp/obsdeps" \
         -DSWIGDIR="/tmp/obsdeps" \
         -DDepsPath="/tmp/obsdeps" \
+        -DWEBRTC_ROOT_DIR="/Users/alexciarlillo/code/src/googlesource/webrtc-checkout/src" \
+        -DMEDIASOUP_CLIENT_DIR="/Users/alexciarlillo/code/src/github/versatica/libmediasoupclient" \
         -DVLCPath="${DEPS_BUILD_DIR}/vlc-${VLC_VERSION:-${CI_VLC_VERSION}}" \
         -DBUILD_BROWSER=ON \
         -DBROWSER_DEPLOY=ON \

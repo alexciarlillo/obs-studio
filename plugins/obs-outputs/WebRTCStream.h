@@ -13,8 +13,6 @@
 // lib obs includes
 #include "obs.h"
 
-// obs-webrtc includes
-#include "WebsocketClient.h"
 #include "VideoCapturer.h"
 #include "AudioDeviceModuleWrapper.h"
 #include "obsWebrtcAudioSource.h"
@@ -40,79 +38,29 @@
 #include <chrono>
 #include <thread>
 
-class WebRTCStreamInterface :
-    public WebsocketClient::Listener,
-    public webrtc::PeerConnectionObserver,
-    public webrtc::CreateSessionDescriptionObserver,
-    public webrtc::SetSessionDescriptionObserver,
-    public webrtc::SetRemoteDescriptionObserverInterface {};
+// class WebRTCStreamInterface :
+//     public webrtc::PeerConnectionObserver,
+//     public webrtc::CreateSessionDescriptionObserver,
+//     public webrtc::SetSessionDescriptionObserver,
+//     public webrtc::SetRemoteDescriptionObserverInterface {};
 
-class WebRTCStream : public rtc::RefCountedObject<WebRTCStreamInterface> {
+class WebRTCStream {
 public:
-    enum Type {
-        Janus     = 0,
-        Wowza     = 1,
-        Millicast = 2,
-        Evercast  = 3,
-	CustomWebrtc = 4
-    };
 
     WebRTCStream(obs_output_t *output);
-    ~WebRTCStream() override;
+    ~WebRTCStream();
 
     bool close(bool wait);
-    bool start(Type type);
+    bool start();
     bool stop();
     void onAudioFrame(audio_data *frame);
     void onVideoFrame(video_data *frame);
     void setCodec(const std::string &new_codec) { this->video_codec = new_codec; }
 
-    //
-    // WebsocketClient::Listener implementation.
-    //
-    void onConnected() override;
-    void onDisconnected() override;
-    void onLogged(int code) override;
-    void onLoggedError(int code) override;
-    void onOpened(const std::string &sdp) override;
-    void onOpenedError(int code) override;
-    void onRemoteIceCandidate(const std::string &sdpData) override;
 
-    //
-    // PeerConnectionObserver implementation.
-    //
-    void OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState /* new_state */) override {}
-    void OnAddStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> /* stream */) override {}
-    void OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> /* stream */) override {}
-    void OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> /* channel */) override {}
-    void OnRenegotiationNeeded() override {}
-    void OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState /* new_state */) override; 
-    void OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState /* new_state */) override {}
-    void OnIceCandidate(const webrtc::IceCandidateInterface *candidate) override;
-    void OnIceConnectionReceivingChange(bool /* receiving */) override {}
-    void OnConnectionChange(webrtc::PeerConnectionInterface::PeerConnectionState new_state) override;
-
-    // CreateSessionDescriptionObserver
-    void OnSuccess(webrtc::SessionDescriptionInterface *desc) override;
-
-    // CreateSessionDescriptionObserver / SetSessionDescriptionObserver
-    void OnFailure(webrtc::RTCError error) override;
-
-    // SetSessionDescriptionObserver
-    void OnSuccess() override;
-
-    // SetRemoteDescriptionObserverInterface
-    void OnSetRemoteDescriptionComplete(webrtc::RTCError error) override;
-
-    // NOTE LUDO: #80 add getStats
-    // WebRTC stats
-    void getStats();
-    const char *get_stats_list() { return stats_list.c_str(); }
     // Bitrate & dropped frames
     uint64_t getBitrate()        { return total_bytes_sent; }
     int getDroppedFrames()       { return pli_received; }
-    // Synchronously get stats
-    rtc::scoped_refptr<const webrtc::RTCStatsReport> NewGetStats();
 
     template <typename T>
     rtc::scoped_refptr<T> make_scoped_refptr(T *t) {
@@ -121,20 +69,15 @@ public:
 
 private:
     // Connection properties
-    Type type;
     int audio_bitrate;
     int video_bitrate;
     std::string url;
-    std::string room;
     std::string username;
     std::string password;
-    std::string protocol;
     std::string audio_codec;
     std::string video_codec;
     int channel_count;
 
-    // NOTE LUDO: #80 add getStats
-    std::string stats_list;
     uint16_t frame_id;
     uint64_t audio_bytes_sent;
     uint64_t video_bytes_sent;
@@ -167,7 +110,7 @@ private:
     // Media stream
     rtc::scoped_refptr<webrtc::MediaStreamInterface> stream;
 
-    // Webrtc Source that wraps an OBS capturer 
+    // Webrtc Source that wraps an OBS capturer
     rtc::scoped_refptr<obsWebrtcAudioSource> audio_source;
 
     // Tracks
@@ -178,9 +121,6 @@ private:
     std::unique_ptr<rtc::Thread> network;
     std::unique_ptr<rtc::Thread> worker;
     std::unique_ptr<rtc::Thread> signaling;
-
-    // Websocket client
-    WebsocketClient *client;
 
     // OBS stream output
     obs_output_t *output;
