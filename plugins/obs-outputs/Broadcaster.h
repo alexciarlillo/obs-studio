@@ -2,7 +2,7 @@
 #define BROADCASTER_H
 
 #include "mediasoupclient.hpp"
-#include "nlohmann/json.hpp"
+#include "json.hpp"
 #include <chrono>
 #include <condition_variable>
 #include <future>

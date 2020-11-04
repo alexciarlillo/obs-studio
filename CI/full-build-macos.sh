@@ -251,7 +251,7 @@ configure_obs_build() {
 
     hr "Run CMAKE for OBS..."
     cmake -DENABLE_SPARKLE_UPDATER=OFF \
-        -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 \
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
         -DDISABLE_PYTHON=ON  \
         -DQTDIR="/tmp/obsdeps" \
         -DSWIGDIR="/tmp/obsdeps" \
@@ -261,10 +261,11 @@ configure_obs_build() {
         -DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl@1.1/1.1.1h \
         -DOPENSSL_CRYPTO_LIBRARY=/usr/local/Cellar/openssl@1.1/1.1.1h/lib/libcrypto.1.1.dylib \
         -DWEBRTC_ROOT_DIR=/Users/alexciarlillo/code/src/googlesource/webrtc-checkout \
+        -DMEDIASOUPCLIENT_BUILD_TESTS=OFF \
         -DBUILD_BROWSER=OFF \
         -DBROWSER_DEPLOY=OFF \
         -DBUILD_CAPTIONS=OFF \
-        -DWITH_RTMPS=ON \
+        -DWITH_RTMPS=OFF \
         -DCEF_ROOT_DIR="${DEPS_BUILD_DIR}/cef_binary_${CEF_BUILD_VERSION:-${CI_CEF_VERSION}}_macosx64" \
         ..
 
