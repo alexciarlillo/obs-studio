@@ -7,9 +7,6 @@
 #include <util/dstr.h>
 #include <util/threading.h>
 #include <inttypes.h>
-#include "librtmp/rtmp.h"
-#include "librtmp/log.h"
-#include "flv-mux.h"
 #include "net-if.h"
 
 #ifdef _WIN32

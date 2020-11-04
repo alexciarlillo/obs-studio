@@ -250,18 +250,20 @@ configure_obs_build() {
     ensure_dir "${CHECKOUT_DIR}/${BUILD_DIR}"
 
     hr "Run CMAKE for OBS..."
-    cmake -DENABLE_SPARKLE_UPDATER=ON \
+    cmake -DENABLE_SPARKLE_UPDATER=OFF \
         -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 \
         -DDISABLE_PYTHON=ON  \
         -DQTDIR="/tmp/obsdeps" \
         -DSWIGDIR="/tmp/obsdeps" \
         -DDepsPath="/tmp/obsdeps" \
-        -DWEBRTC_ROOT_DIR="/Users/alexciarlillo/code/src/googlesource/webrtc-checkout/src" \
-        -DMEDIASOUP_CLIENT_DIR="/Users/alexciarlillo/code/src/github/versatica/libmediasoupclient" \
         -DVLCPath="${DEPS_BUILD_DIR}/vlc-${VLC_VERSION:-${CI_VLC_VERSION}}" \
-        -DBUILD_BROWSER=ON \
-        -DBROWSER_DEPLOY=ON \
-        -DBUILD_CAPTIONS=ON \
+        -DCMAKE_USE_OPENSSL=ON \
+        -DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl@1.1/1.1.1h \
+        -DOPENSSL_CRYPTO_LIBRARY=/usr/local/Cellar/openssl@1.1/1.1.1h/lib/libcrypto.1.1.dylib \
+        -DWEBRTC_ROOT_DIR=/Users/alexciarlillo/code/src/googlesource/webrtc-checkout \
+        -DBUILD_BROWSER=OFF \
+        -DBROWSER_DEPLOY=OFF \
+        -DBUILD_CAPTIONS=OFF \
         -DWITH_RTMPS=ON \
         -DCEF_ROOT_DIR="${DEPS_BUILD_DIR}/cef_binary_${CEF_BUILD_VERSION:-${CI_CEF_VERSION}}_macosx64" \
         ..

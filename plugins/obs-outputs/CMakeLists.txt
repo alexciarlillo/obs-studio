@@ -91,12 +91,10 @@ if(WIN32)
 	set(WEBRTC_USE_FILE_INCLUDED 0)
 endif()
 
+
 message( STATUS "Looking for libwebrtc" )
 find_package(LibWebRTC REQUIRED)
 message( STATUS "Looking for libwebrtc - found" )
-message( STATUS "Looking for libmediasoupclient" )
-find_package(LibMediasoupClient REQUIRED)
-message( STATUS "Looking for libmediasoupclient - found" )
 if( WEBRTC_H264_FOUND )
         message( STATUS "This libwebrtc package was built with H264 support." )
 endif()
@@ -112,10 +110,6 @@ endif()
 if( WEBRTC_ADVERTISE_MULTIOPUS_CODEC )
         message( STATUS "This libwebrtc package was build with built-in multiopus codec." )
 endif()
-
-
-include_directories(${WEBRTC_INCLUDE_DIRS})
-# include_directories(${LIBMEDIASOUPCLIENT_INCLUDE_DIRS})
 
 
 if(WIN32)
@@ -174,15 +168,15 @@ if(NOT WIN32)
 endif()
 
 set(obs-outputs_webrtc_HEADERS
-	AudioDeviceModuleWrapper.h
-	obsWebrtcAudioSource.h
-	VideoCapturer.h
+	# AudioDeviceModuleWrapper.h
+	# obsWebrtcAudioSource.h
+	# VideoCapturer.h
 	Broadcaster.h
 	MediaStreamTrackFactory.h)
 set(obs-outputs_webrtc_SOURCES
-	AudioDeviceModuleWrapper.cpp
-	obsWebrtcAudioSource.cpp
-	VideoCapturer.cpp
+	# AudioDeviceModuleWrapper.cpp
+	# obsWebrtcAudioSource.cpp
+	# VideoCapturer.cpp
 	Broadcaster.cpp
 	MediaStreamTrackFactory.cpp)
 
@@ -214,6 +208,20 @@ if(WIN32)
 		obs-outputs.rc)
 endif()
 
+add_subdirectory(libmediasoupclient)
+add_subdirectory(cpr)
+
+message("\n=========== STUFF ===========\n")
+message(STATUS "LIBWEBRTC_INCLUDE_PATH                : " ${LIBWEBRTC_INCLUDE_PATH})
+message(STATUS "LIBWEBRTC_BINARY_PATH                 : " ${LIBWEBRTC_BINARY_PATH})
+message(STATUS "WEBRTC_LIBRARIES                      : " ${WEBRTC_LIBRARIES})
+message(STATUS "OPENSSL_INCLUDE_DIR                   : " ${OPENSSL_INCLUDE_DIR})
+message(STATUS "CMAKE_USE_OPENSSL                     : " ${CMAKE_USE_OPENSSL})
+message(STATUS "CPR_INCLUDE_DIRS                      : " ${CPR_INCLUDE_DIRS})
+message(STATUS "CPR_LIBRARIES                         : " ${CPR_LIBRARIES})
+message(STATUS "MEDIASOUPCLIENT_INCLUDE_DIRS          : " ${MEDIASOUPCLIENT_INCLUDE_DIRS})
+message("")
+
 add_library(obs-outputs MODULE
 	${ftl_SOURCES}
 	${ftl_HEADERS}
@@ -224,11 +232,18 @@ add_library(obs-outputs MODULE
 	${obs-outputs_webrtc_SOURCES}
 	${obs-outputs_webrtc_HEADERS})
 
+# Public (interface) headers from dependencies.
+target_include_directories(obs-outputs PUBLIC
+	${CPR_INCLUDE_DIRS}
+	"${CMAKE_CURRENT_LIST_DIR}/libmediasoupclient/include"
+)
+
 target_link_libraries(obs-outputs
 	libobs
+	mediasoupclient
+	${CPR_LIBRARIES}
 	${MBEDTLS_LIBRARIES}
 	${WEBRTC_LIBRARIES}
-	${LIBMEDIASOUPCLIENT_LIBRARIES}
 	${ZLIB_LIBRARIES}
 	${ftl_IMPORTS}
 	${obs-outputs_PLATFORM_DEPS})
