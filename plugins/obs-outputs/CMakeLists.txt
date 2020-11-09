@@ -115,17 +115,21 @@ if(NOT WIN32)
 endif()
 
 set(obs-outputs_webrtc_HEADERS
+	MediaStreamTrackFactory.h
 	AudioDeviceModuleWrapper.h
 	obsWebrtcAudioSource.h
 	VideoCapturer.h
-	# Broadcaster.h
-	WebRTCStream.h)
+	Broadcaster.h
+	mediasoup-stream.h)
+	#WebRTCStream.h)
 set(obs-outputs_webrtc_SOURCES
+	MediaStreamTrackFactory.cpp
 	AudioDeviceModuleWrapper.cpp
 	obsWebrtcAudioSource.cpp
 	VideoCapturer.cpp
-	# Broadcaster.cpp
-	WebRTCStream.cpp)
+	Broadcaster.cpp
+	mediasoup-stream.cpp)
+	#WebRTCStream.cpp)
 
 if(NOT WIN32)
 	set_source_files_properties(${obs-outputs_webrtc_SOURCES} PROPERTIES

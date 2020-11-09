@@ -44,7 +44,7 @@
 //     public webrtc::SetSessionDescriptionObserver,
 //     public webrtc::SetRemoteDescriptionObserverInterface {};
 
-class WebRTCStream {
+class WebRTCStream : public rtc::RefCountedObject<WebRTCStreamInterface> {
 public:
 
     WebRTCStream(obs_output_t *output);

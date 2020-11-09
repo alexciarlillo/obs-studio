@@ -1,5 +1,3 @@
-// Copyright Dr. Alex. Gouaillard (2015, 2020)
-
 #include <stdio.h>
 #include <obs-module.h>
 #include <obs-avc.h>
@@ -8,7 +6,9 @@
 #include <util/threading.h>
 #include <inttypes.h>
 #include <modules/audio_processing/include/audio_processing.h>
-#include "libmediasoupclient/mediasoupclient.hpp"
+#include "mediasoupclient.hpp"
+#include <cpr/cpr.h>
+#include "Broadcaster.h"
 
 #define warn(format, ...)  blog(LOG_WARNING, format, ##__VA_ARGS__)
 #define info(format, ...)  blog(LOG_INFO,    format, ##__VA_ARGS__)
@@ -40,7 +40,7 @@ extern "C" void *mediasoup_stream_create(obs_data_t *settings, obs_output_t *out
 
 	mediasoupclient::Initialize();
 
-	Broadcaster broadcaster;
+	Broadcaster *broadcaster = new Broadcaster(output, true, true, false);
 	return (void*)broadcaster;
 }
 
@@ -48,12 +48,11 @@ extern "C" void mediasoup_stream_stop(void *data, uint64_t ts)
 {
 	info("mediasoup_stream_stop");
 	UNUSED_PARAMETER(ts);
-	//Get stream
+
 	Broadcaster *broadcaster = (Broadcaster*)data;
-	//Stop it
 	broadcaster->stop();
 	//Remove ref and let it self destroy
-	// stream->Release();
+	broadcaster->Release();
 }
 
 extern "C" bool mediasoup_stream_start(void *data)
@@ -67,21 +66,20 @@ extern "C" bool mediasoup_stream_start(void *data)
 
 extern "C" void mediasoup_receive_video(void *data, struct video_data *frame)
 {
-	//Get stream
-	// stream->onVideoFrame(frame);
+	Broadcaster *broadcaster = (Broadcaster*)data;
+	broadcaster->onVideoFrame(frame);
 }
 
 extern "C" void mediasoup_receive_audio(void *data, struct audio_data *frame)
 {
-	//Get stream
-	// stream->onAudioFrame(frame);
+	Broadcaster *broadcaster = (Broadcaster*)data;
+	broadcaster->onAudioFrame(frame);
 }
 
 extern "C" void mediasoup_receive_multitrack_audio(void *data, size_t idx, struct audio_data *frame)
 {
-	//Get stream
-	//Process audio
-	// stream->onAudioFrame(frame);
+	Broadcaster *broadcaster = (Broadcaster*)data;
+	broadcaster->onAudioFrame(frame);
 }
 
 extern "C" void mediasoup_stream_defaults(obs_data_t *defaults)

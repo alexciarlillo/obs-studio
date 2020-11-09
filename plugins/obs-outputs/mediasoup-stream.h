@@ -1,5 +1,3 @@
-// Copyright Dr. Alex. Gouaillard (2015, 2020)
-
 #include <obs-module.h>
 #include <obs-avc.h>
 #include <util/platform.h>
