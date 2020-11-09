@@ -1,3 +1,9 @@
+if (POLICY CMP0063)
+   # This policy tells cmake to really honor CXX_VISIBILITY_PRESET rather than
+   # ignore it for backwards compatibility.
+   cmake_policy(SET CMP0063 NEW)
+endif()
+
 include_directories(${sdptransform_SOURCE_DIR}/include)
 include_directories(include)
 
