@@ -739,12 +739,18 @@ bool SimpleOutput::SetupStreaming(obs_service_t *service)
 	/* --------------------- */
 
 	const char *type = obs_service_get_output_type(service);
+	string typeCheck = obs_service_get_type(service);
+
 	if (!type) {
-		type = "rtmp_output";
-		const char *url = obs_service_get_url(service);
-		if (url != NULL &&
-		    strncmp(url, RTMP_PROTOCOL, strlen(RTMP_PROTOCOL)) != 0) {
-			type = "ffmpeg_mpegts_muxer";
+		if (typeCheck.find("mediasoup") != string::npos) {
+			type = "mediasoup_output";
+		} else {
+			type = "rtmp_output";
+			const char *url = obs_service_get_url(service);
+			if (url != NULL &&
+			    strncmp(url, RTMP_PROTOCOL, strlen(RTMP_PROTOCOL)) != 0) {
+				type = "ffmpeg_mpegts_muxer";
+			}
 		}
 	}
 
@@ -1526,12 +1532,18 @@ bool AdvancedOutput::SetupStreaming(obs_service_t *service)
 	/* --------------------- */
 
 	const char *type = obs_service_get_output_type(service);
+	string typeCheck = obs_service_get_type(service);
+
 	if (!type) {
-		type = "rtmp_output";
-		const char *url = obs_service_get_url(service);
-		if (url != NULL &&
-		    strncmp(url, RTMP_PROTOCOL, strlen(RTMP_PROTOCOL)) != 0) {
-			type = "ffmpeg_mpegts_muxer";
+		if (typeCheck.find("mediasoup") != string::npos) {
+			type = "mediasoup_output";
+		} else {
+			type = "rtmp_output";
+			const char *url = obs_service_get_url(service);
+			if (url != NULL &&
+			    strncmp(url, RTMP_PROTOCOL, strlen(RTMP_PROTOCOL)) != 0) {
+				type = "ffmpeg_mpegts_muxer";
+			}
 		}
 	}
 
