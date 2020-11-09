@@ -206,6 +206,7 @@ bool Broadcaster::start()
   // Extract setting from service
 
   url      = obs_service_get_url(service)      ? obs_service_get_url(service)      : "";
+  key      = obs_service_get_key(service)      ? obs_service_get_key(service)      : "";
   username = obs_service_get_username(service) ? obs_service_get_username(service) : "";
   password = obs_service_get_password(service) ? obs_service_get_password(service) : "";
   // Some extra log
@@ -215,11 +216,11 @@ bool Broadcaster::start()
 
   bool isServiceValid = true;
   if (url.empty()) {
-      warn("Invalid url");
+      warn("Invalid URL");
       isServiceValid = false;
   }
-  if (password.empty()) {
-    warn("Missing Password");
+  if (key.empty()) {
+    warn("Missing Key");
     isServiceValid = false;
   }
 
@@ -238,7 +239,7 @@ bool Broadcaster::start()
   if (r.status_code != 200)
   {
     info("[ERROR] unable to retrieve room info  [status code: %s, body:\"%s\"]");
-
+    return false;
   }
   else
   {

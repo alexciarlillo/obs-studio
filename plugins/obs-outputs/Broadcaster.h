@@ -78,6 +78,7 @@ private:
   std::string id = std::to_string(rtc::CreateRandomId());
 
   std::string url;
+  std::string key;
   std::string username;
   std::string password;
   std::string audio_codec;
