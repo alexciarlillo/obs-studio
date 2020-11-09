@@ -22,6 +22,8 @@ extern struct obs_output_info flv_output_info;
 extern struct obs_output_info ftl_output_info;
 #endif
 
+extern struct obs_output_info mediasoup_output_info;
+
 #if defined(_WIN32) && defined(MBEDTLS_THREADING_ALT)
 void mbed_mutex_init(mbedtls_threading_mutex_t *m)
 {
@@ -68,6 +70,7 @@ bool obs_module_load(void)
 	obs_register_output(&rtmp_output_info);
 	obs_register_output(&null_output_info);
 	obs_register_output(&flv_output_info);
+	obs_register_output(&mediasoup_output_info);
 #if COMPILE_FTL
 	obs_register_output(&ftl_output_info);
 #endif
