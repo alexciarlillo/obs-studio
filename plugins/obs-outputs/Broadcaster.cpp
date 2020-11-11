@@ -60,9 +60,20 @@ bool Broadcaster::start()
   // // options.tx_agc_limiter.emplace(false);
   // audio_source = obsWebrtcAudioSource::Create(&options);
 
-  info("Try HTTP");
-  auto r = cpr::GetAsync(cpr::Url{ "https://www.google.com" }).get();
-  info("Try Done");
+  // POST /test/rtctoken
+  // get an RTC token for user cand channel
+  info("Getting token");
+  auto r = cpr::Post(cpr::Url{"http://localhost:8080/test/rtcToken"},
+                    cpr::Body{"{\"userId\":\"xrdOWdyX\",\"channelId\":\"6057bdaf-c457-44c5-9e63-11d4614a86e1\"}"},
+                    cpr::Header{{"guilded-test-run-id", "123"}, {"Content-Type", "application/json"}});
+  info("Token response: %s", r.text.c_str());
+
+  // /channels/:channelId/stream/room
+  // get room router rtp parameters, attach fake token in header
+
+  // /channels/:channelId/stream/connect
+  // get send transport options
+
 
   if (r.status_code != 200)
   {
