@@ -7,6 +7,9 @@
 #include <string>
 #include <thread>
 #include <cpr/cpr.h>
+#include "json.hpp"
+#include "MediaStreamTrackFactory.h"
+#include "mediasoupclient.hpp"
 
 #include <obs-module.h>
 
@@ -28,6 +31,8 @@
 #define warn(format, ...)  blog(LOG_WARNING, format, ##__VA_ARGS__)
 #define error(format, ...) blog(LOG_ERROR,   format, ##__VA_ARGS__)
 
+using json = nlohmann::json;
+
 Broadcaster::~Broadcaster()
 {
   this->stop();
@@ -39,59 +44,378 @@ Broadcaster::Broadcaster(obs_output_t *output)
 
   // Store output
   this->output = output;
+
+  // Create video capture module
+  videoCapturer = new rtc::RefCountedObject<VideoCapturer>();
 }
 
 bool Broadcaster::start()
 {
-  // what do?
-
-  // cricket::AudioOptions options;
-  // options.echo_cancellation.emplace(false); // default: true
-  // options.auto_gain_control.emplace(false); // default: true
-  // options.noise_suppression.emplace(false); // default: true
-  // options.highpass_filter.emplace(false);   // default: true
-  // options.stereo_swapping.emplace(false);
-  // options.typing_detection.emplace(false);  // default: true
-  // options.experimental_agc.emplace(false);
-  // // m79 options.extended_filter_aec.emplace(false);
-  // // m79 options.delay_agnostic_aec.emplace(false);
-  // options.experimental_ns.emplace(false);
-  // options.residual_echo_detector.emplace(false); // default: true
-  // // options.tx_agc_limiter.emplace(false);
-  // audio_source = obsWebrtcAudioSource::Create(&options);
 
   // POST /test/rtctoken
-  // get an RTC token for user cand channel
+  // get an RTC token for user and channel
   info("Getting token");
-  auto r = cpr::Post(cpr::Url{"http://localhost:8080/test/rtcToken"},
-                    cpr::Body{"{\"userId\":\"xrdOWdyX\",\"channelId\":\"6057bdaf-c457-44c5-9e63-11d4614a86e1\"}"},
+  json params = {
+    {"userId", userId},
+    {"channelId", channelId}
+  };
+
+  auto tokenRes = cpr::Post(cpr::Url{apiUrl + "/test/rtcToken"},
+                    cpr::Body{params.dump()},
                     cpr::Header{{"guilded-test-run-id", "123"}, {"Content-Type", "application/json"}});
-  info("Token response: %s", r.text.c_str());
+  if (tokenRes.status_code != 200)
+  {
+    info("Bad status code tokenRes");
+    return false;
+  }
+
+  auto tokenData = json::parse(tokenRes.text);
+  token = tokenData["token"].get<std::string>();
+  info("Got token %s", token.c_str());
 
   // /channels/:channelId/stream/room
   // get room router rtp parameters, attach fake token in header
-
-  // /channels/:channelId/stream/connect
-  // get send transport options
-
-
-  if (r.status_code != 200)
+  auto roomRes = cpr::Get(cpr::Url(rtcUrl + "/channels/" + channelId + "/stream/room"),
+                cpr::Header{{"guilded-test-run-id", "123"}, {"guilded-test-rtc-token", token}});
+  if (roomRes.status_code != 200)
   {
-    info("Bad status code");
+    info("Bad status code roomRes");
     return false;
   }
-  else
-  {
-    info("Got OK");
+  auto roomData = json::parse(roomRes.text);
+
+  info("Router RTPCapabilities: %s", roomData["routerRtpCapabilities"].dump().c_str());
+
+  info("[INFO] loading device");
+  // Load the device.
+  if (!device.IsLoaded()) {
+    device.Load(roomData["routerRtpCapabilities"]);
+  }
+
+  if (device.IsLoaded()) {
+    this->Connect();
+
     obs_output_begin_data_capture(output, 0);
     return true;
+  } else {
+    info("Device Not Loaded");
+    return false;
   }
 }
 
 bool Broadcaster::stop()
 {
+  if (this->sendTransport)
+  {
+    info("[INFO] Close Send Transport");
+    sendTransport->Close();
+  }
+
+
+  // /channels/:channelId/stream/disconnect
+  auto r = cpr::Post(
+             cpr::Url{ rtcUrl + "/channels/" + channelId + "/stream/disconnect"},
+             cpr::Header{ { "Content-Type", "application/json" }, {"guilded-test-run-id", "123"}, {"guilded-test-rtc-token", token} });
+
+
   obs_output_end_data_capture(output);
   return true;
+}
+
+void Broadcaster::Connect()
+{
+  info("[INFO] creating mediasoup send WebRtcTransport...");
+
+  json rtpCapabilities = device.GetRtpCapabilities();
+
+  info ("Device RTPCapabilities: %s", rtpCapabilities.dump().c_str());
+
+  /* clang-format off */
+  json body =
+  {
+    { "rtpCapabilities", rtpCapabilities },
+    { "appType", "desktop-obs" },
+    { "force", true }
+  };
+  /* clang-format on */
+
+  info("Got past that thing...");
+
+  // /channels/:channelId/stream/connect
+  // get send transport options
+  auto r = cpr::Post(
+             cpr::Url{ rtcUrl + "/channels/" + channelId + "/stream/connect" },
+             cpr::Body{ body.dump() },
+             cpr::Header{ { "Content-Type", "application/json" }, {"guilded-test-run-id", "123"}, {"guilded-test-rtc-token", token}});
+
+  if (r.status_code != 200)
+  {
+    std::cerr << "[ERROR] unable to create send mediasoup WebRtcTransport"
+              << " [status code:" << r.status_code << ", body:\"" << r.text << "\"]" << std::endl;
+
+    return;
+  }
+
+  info("Connect OK");
+
+  auto response = json::parse(r.text)["sendTransportOptions"];
+
+  info("Send Transport Options: %s", response.dump().c_str());
+
+  if (response.find("id") == response.end())
+  {
+    info("[ERROR] 'id' missing in response");
+
+    return;
+  }
+  else if (response.find("iceParameters") == response.end())
+  {
+    info("[ERROR] 'iceParametersd' missing in response");
+
+    return;
+  }
+  else if (response.find("iceCandidates") == response.end())
+  {
+    info("[ERROR] 'iceCandidates' missing in response");
+
+    return;
+  }
+  else if (response.find("dtlsParameters") == response.end())
+  {
+    info("[ERROR] 'dtlsParameters' missing in response");
+
+    return;
+  }
+
+
+  auto sendTransportId = response["id"].get<std::string>();
+
+  info("[INFO] creating SendTransport... %s", sendTransportId.c_str());
+
+  this->sendTransport = this->device.CreateSendTransport(
+    this,
+    sendTransportId,
+    response["iceParameters"],
+    response["iceCandidates"],
+    response["dtlsParameters"]);
+
+  ///////////////////////// Create Audio Producer //////////////////////////
+
+  if (false && this->device.CanProduce("audio"))
+  {
+    cricket::AudioOptions options;
+    options.echo_cancellation.emplace(false); // default: true
+    options.auto_gain_control.emplace(false); // default: true
+    options.noise_suppression.emplace(false); // default: true
+    options.highpass_filter.emplace(false);   // default: true
+    options.stereo_swapping.emplace(false);
+    options.typing_detection.emplace(false);  // default: true
+    options.experimental_agc.emplace(false);
+    // m79 options.extended_filter_aec.emplace(false);
+    // m79 options.delay_agnostic_aec.emplace(false);
+    options.experimental_ns.emplace(false);
+    options.residual_echo_detector.emplace(false); // default: true
+    // options.tx_agc_limiter.emplace(false);
+
+
+    audio_source = obsWebrtcAudioSource::Create(&options);
+    audio_track = createAudioTrack(std::to_string(rtc::CreateRandomId()), audio_source);
+
+    /* clang-format off */
+    json codecOptions = {
+      { "opusStereo", true },
+      { "opusDtx",    true }
+    };
+    /* clang-format on */
+
+    this->sendTransport->Produce(this, audio_track, nullptr, &codecOptions);
+  }
+  else
+  {
+    info("[WARN] cannot produce audio");
+  }
+
+  ///////////////////////// Create Video Producer //////////////////////////
+
+  if (this->device.CanProduce("video"))
+  {
+    auto videoTrack = createVideoTrack(std::to_string(rtc::CreateRandomId()), videoCapturer);
+
+    if (true)
+    {
+      std::vector<webrtc::RtpEncodingParameters> encodings;
+      encodings.emplace_back(webrtc::RtpEncodingParameters());
+      encodings.emplace_back(webrtc::RtpEncodingParameters());
+      encodings.emplace_back(webrtc::RtpEncodingParameters());
+
+      this->sendTransport->Produce(this, videoTrack, &encodings, nullptr);
+    }
+    else
+    {
+      this->sendTransport->Produce(this, videoTrack, nullptr, nullptr);
+    }
+  }
+  else
+  {
+    info("[WARN] cannot produce video");
+
+    return;
+  }
+}
+
+/* Transport::Listener::OnConnect
+ *
+ * Fired for the first Transport::Consume() or Transport::Produce().
+ * Update the already created remote transport with the local DTLS parameters.
+ */
+std::future<void> Broadcaster::OnConnect(mediasoupclient::Transport* transport, const json& dtlsParameters)
+{
+  info("[INFO] Broadcaster::OnConnect()");
+  // info("[INFO] dtlsParameters: " << dtlsParameters.dump(4));
+
+  if (transport->GetId() == this->sendTransport->GetId())
+  {
+    return this->OnConnectSendTransport(dtlsParameters);
+  }
+
+  else
+  {
+    std::promise<void> promise;
+
+    promise.set_exception(std::make_exception_ptr("Unknown transport requested to connect"));
+
+    return promise.get_future();
+  }
+}
+
+std::future<void> Broadcaster::OnConnectSendTransport(const json& dtlsParameters)
+{
+  info("[INFO] On Connect Send Transport");
+  std::promise<void> promise;
+
+  /* clang-format off */
+  json body =
+  {
+    { "dtlsParameters", dtlsParameters },
+    { "transportId", this->sendTransport->GetId() }
+  };
+  /* clang-format on */
+
+   // /channels/:channelId/stream/transport
+  auto r = cpr::Post(
+             cpr::Url{ rtcUrl + "/channels/" + channelId + "/stream/transport"},
+             cpr::Body{ body.dump() },
+             cpr::Header{ { "Content-Type", "application/json" }, {"guilded-test-run-id", "123"}, {"guilded-test-rtc-token", token} });
+
+  if (r.status_code == 200)
+  {
+    promise.set_value();
+  }
+  else
+  {
+    std::cerr << "[ERROR] unable to connect transport"
+              << " [status code:" << r.status_code << ", body:\"" << r.text << "\"]" << std::endl;
+
+    promise.set_exception(std::make_exception_ptr(r.text));
+  }
+
+  return promise.get_future();
+}
+
+/*
+ * Transport::Listener::OnConnectionStateChange.
+ */
+void Broadcaster::OnConnectionStateChange(
+  mediasoupclient::Transport* /*transport*/, const std::string& connectionState)
+{
+  std::cout << "[INFO] Broadcaster::OnConnectionStateChange() [connectionState:" << connectionState
+            << "]" << std::endl;
+
+  if (connectionState == "failed")
+  {
+    stop();
+    std::exit(0);
+  }
+}
+
+/* Producer::Listener::OnProduce
+ *
+ * Fired when a producer needs to be created in mediasoup.
+ * Retrieve the remote producer ID and feed the caller with it.
+ */
+std::future<std::string> Broadcaster::OnProduce(
+  mediasoupclient::SendTransport* /*transport*/,
+  const std::string& kind,
+  json rtpParameters,
+  const json& /*appData*/)
+{
+  info("[INFO] Broadcaster::OnProduce()");
+  // info("[INFO] rtpParameters: " << rtpParameters.dump(4));
+
+  std::promise<std::string> promise;
+
+  /* clang-format off */
+  json body =
+  {
+    { "kind",          kind          },
+    { "rtpParameters", rtpParameters },
+    { "transportId", this->sendTransport->GetId() }
+  };
+  /* clang-format on */
+
+  // /channels/:channelId/stream/producers
+  auto r = cpr::Post(
+             cpr::Url{ rtcUrl + "/channels/" + channelId + "/stream/producers"},
+             cpr::Body{ body.dump() },
+             cpr::Header{ { "Content-Type", "application/json" }, {"guilded-test-run-id", "123"}, {"guilded-test-rtc-token", token}});
+
+  if (r.status_code == 200)
+  {
+    auto response = json::parse(r.text);
+
+    auto it = response.find("id");
+    if (it == response.end() || !it->is_string())
+    {
+      promise.set_exception(std::make_exception_ptr("'id' missing in response"));
+    }
+
+    promise.set_value((*it).get<std::string>());
+  }
+  else
+  {
+    std::cerr << "[ERROR] unable to create producer"
+              << " [status code:" << r.status_code << ", body:\"" << r.text << "\"]" << std::endl;
+
+    promise.set_exception(std::make_exception_ptr(r.text));
+  }
+
+  return promise.get_future();
+}
+
+void Broadcaster::OnTransportClose(mediasoupclient::Producer* /*producer*/)
+{
+  info("[INFO] Broadcaster::OnTransportClose()");
+}
+
+/* Producer::Listener::OnProduceData
+ *
+ * Fired when a data producer needs to be created in mediasoup.
+ * Retrieve the remote producer ID and feed the caller with it.
+ */
+std::future<std::string> Broadcaster::OnProduceData(
+  mediasoupclient::SendTransport* /*transport*/,
+  const json& sctpStreamParameters,
+  const std::string& label,
+  const std::string& protocol,
+  const json& /*appData*/)
+{
+  std::cout << "[INFO] Broadcaster::OnProduceData()" << std::endl;
+  // std::cout << "[INFO] rtpParameters: " << rtpParameters.dump(4) << std::endl;
+
+  std::promise<std::string> promise;
+  std::string id = "not-implemented";
+  promise.set_value(id);
+  return promise.get_future();
 }
 
 void Broadcaster::onAudioFrame(audio_data *frame)
@@ -106,10 +430,6 @@ void Broadcaster::onVideoFrame(video_data *frame)
 {
     if (!frame)
         return;
-
-    if (frame_id % 60 == 0) {
-      info("Frame %d", frame_id);
-    }
 
     // Calculate size
     int outputWidth = obs_output_get_width(output);
@@ -155,4 +475,6 @@ void Broadcaster::onVideoFrame(video_data *frame)
             .set_id(++frame_id)
             .build();
 
+    // Send frame to video capturer
+    videoCapturer->OnFrameCaptured(video_frame);
 }

@@ -8,6 +8,7 @@
 #include <modules/audio_processing/include/audio_processing.h>
 #include "api/scoped_refptr.h"
 #include "Broadcaster.h"
+#include "mediasoupclient.hpp"
 
 #define warn(format, ...)  blog(LOG_WARNING, format, ##__VA_ARGS__)
 #define info(format, ...)  blog(LOG_INFO,    format, ##__VA_ARGS__)
@@ -36,6 +37,8 @@ extern "C" void *mediasoup_stream_create(obs_data_t *settings, obs_output_t *out
 {
 	UNUSED_PARAMETER(settings);
 	info("mediasoup_stream_create");
+
+	mediasoupclient::Initialize();
 
 	Broadcaster *broadcaster = new Broadcaster(output);
 	return (void*)broadcaster;

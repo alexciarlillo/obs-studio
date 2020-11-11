@@ -63,6 +63,10 @@ get_filename_component(WEBRTC_BINARY_PATH ${LIBWEBRTC_LIBRARY} DIRECTORY)
 set(LIBWEBRTC_BINARY_PATH ${WEBRTC_BINARY_PATH} CACHE STRING "libwebrtc binary path")
 
 
+add_subdirectory(libmediasoupclient)
+set_target_properties(mediasoupclient PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
+
 if(WIN32)
 	set(obs-outputs_PLATFORM_DEPS
 		ws2_32
@@ -119,13 +123,25 @@ if(NOT WIN32)
 endif()
 
 set(obs-outputs_webrtc_HEADERS
+	MediaStreamTrackFactory.h
+	AudioDeviceModuleWrapper.h
+	VideoCapturer.h
 	obsWebrtcAudioSource.h
 	Broadcaster.h
-	mediasoup-stream.h)
+	mediasoup-stream.h
+	MediasoupVideoEncoderFactory.h
+	SimulcastMediasoupVideoEncoderFactory.h)
+	# mediasoup-encoder.h)
 set(obs-outputs_webrtc_SOURCES
+	MediaStreamTrackFactory.cpp
+	AudioDeviceModuleWrapper.cpp
+	VideoCapturer.cpp
 	obsWebrtcAudioSource.cpp
 	Broadcaster.cpp
-	mediasoup-stream.cpp)
+	mediasoup-stream.cpp
+	MediasoupVideoEncoderFactory.cpp
+	SimulcastMediasoupVideoEncoderFactory.cpp)
+	# mediasoup-encoder.cpp)
 
 if(NOT WIN32)
 	set_source_files_properties(${obs-outputs_webrtc_SOURCES} PROPERTIES
@@ -163,7 +179,6 @@ message(STATUS "OPENSSL_INCLUDE_DIR                   : " ${OPENSSL_INCLUDE_DIR}
 message(STATUS "CMAKE_USE_OPENSSL                     : " ${CMAKE_USE_OPENSSL})
 message(STATUS "CPR_INCLUDE_DIRS                      : " ${CPR_INCLUDE_DIRS})
 message(STATUS "CPR_LIBRARIES                         : " ${CPR_LIBRARIES})
-message(STATUS "WEBRTC_LIBRARIES                      : " ${WEBRTC_LIBRARIES})
 message("")
 
 
@@ -177,10 +192,15 @@ add_library(obs-outputs MODULE
 	${obs-outputs_webrtc_SOURCES}
 	${obs-outputs_webrtc_HEADERS})
 
+# Public (interface) headers from dependencies.
+target_include_directories(obs-outputs PUBLIC
+	"${CMAKE_CURRENT_LIST_DIR}/libmediasoupclient/include"
+)
 
 target_link_libraries(obs-outputs
 	${WEBRTC_LIBRARIES}
 	libobs
+	mediasoupclient
 	${MBEDTLS_LIBRARIES}
 	${ZLIB_LIBRARIES}
 	${ftl_IMPORTS}
