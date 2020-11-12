@@ -101,7 +101,8 @@ bool MediasoupVideoEncoder::stop() {
     return ret;
 }
 
-//// WebRTC Interfaces /////
+//// WebRTC Interface /////
+
 int MediasoupVideoEncoder::InitEncode(
     const webrtc::VideoCodec* codec_settings,
     const VideoEncoder::Settings& settings) {

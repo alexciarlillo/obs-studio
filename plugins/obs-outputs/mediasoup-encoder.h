@@ -56,7 +56,7 @@ public:
 
     virtual void OnLossNotification(const webrtc::LossNotification& loss_notification) override;
 
-    virtual EncoderInfo GetEncoderInfo() const;
+    virtual webrtc::EncoderInfo GetEncoderInfo() const;
 
 private:
     bool start_internal(obs_encoder_t *encoder);
