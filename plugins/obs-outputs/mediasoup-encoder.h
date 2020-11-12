@@ -21,7 +21,6 @@
 #include <mutex>
 
 ///////////////////////////////////MediasoupVideoEncoder///////////////////////////////////////
-class IOService;
 class MediasoupVideoEncoder : public webrtc::VideoEncoder {
 public:
     MediasoupVideoEncoder();
@@ -34,11 +33,11 @@ public:
     bool stop();
     void obs_encode(struct video_data *frame);
 
-    //WebRTC interfaces.
-    virtual int32_t InitEncode(
+    // WebRTC interfaces
+
+    virtual int InitEncode(
         const webrtc::VideoCodec* codec_settings,
-        int32_t number_of_cores,
-        size_t max_payload_size) override;
+        const VideoEncoder::Settings& settings) override;
 
     virtual int32_t RegisterEncodeCompleteCallback(
         webrtc::EncodedImageCallback* callback) override;
@@ -47,12 +46,17 @@ public:
 
     virtual int32_t Encode(
         const webrtc::VideoFrame& frame,
-        const webrtc::CodecSpecificInfo* codec_specific_info,
         const std::vector<webrtc::FrameType>* frame_types) override;
 
-    virtual int32_t SetChannelParameters(
-        uint32_t packet_loss,
-        int64_t rtt) override;
+    virtual void SetRates(const webrtc::RateControlParameters& parameters)
+
+    virtual void OnPacketLossRateUpdate(float packet_loss_rate) override;
+
+    virtual void OnRttUpdate(int64_t rtt_ms) override;
+
+    virtual void OnLossNotification(const webrtc::LossNotification& loss_notification) override;
+
+    virtual EncoderInfo GetEncoderInfo() const;
 
 private:
     bool start_internal(obs_encoder_t *encoder);
@@ -71,26 +75,6 @@ private:
         void *param);
     void obs_encoder_actually_destroy(obs_encoder_t *encoder);
     void free_audio_buffers(struct obs_encoder *encoder);
-
-    //WebRTC interface implement.
-    void InitEncodeOnCodecThread(
-        int32_t width,
-        int32_t height,
-        int32_t target_bitrate,
-        int32_t fps,
-        std::shared_ptr<std::promise<int32_t> > promise);
-
-    void RegisterEncodeCompleteCallbackOnCodecThread(
-        webrtc::EncodedImageCallback* callback,
-        std::shared_ptr<std::promise<int32_t> > promise);
-
-    void ReleaseOnCodecThread(
-        std::shared_ptr<std::promise<int32_t> > promise);
-
-    void EncodeOnCodecThread(
-        const webrtc::VideoFrame& frame,
-        const webrtc::FrameType frame_type,
-        const int64_t frame_input_time_ms);
 
     //OBS encoder implement.
 

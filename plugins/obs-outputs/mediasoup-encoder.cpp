@@ -101,82 +101,96 @@ bool MediasoupVideoEncoder::stop() {
     return ret;
 }
 
-//WebRTC interfaces.
-int32_t MediasoupVideoEncoder::InitEncode(
+//// WebRTC Interfaces /////
+int MediasoupVideoEncoder::InitEncode(
     const webrtc::VideoCodec* codec_settings,
-    int32_t number_of_cores,
-    size_t max_payload_size) {
+    const VideoEncoder::Settings& settings) {
 
-    io_service_.reset(new IOService);
-    io_service_->start();
+    // TODO: more here??
 
-    int32_t ret = 0;
-    std::shared_ptr<std::promise<int32_t> > promise(new std::promise<int32_t>);
-    io_service_->ios()->post(
-        boost::bind(&MediasoupVideoEncoder::InitEncodeOnCodecThread,
-            this,
-            codec_settings->width,
-            codec_settings->height,
-            codec_settings->targetBitrate,
-            codec_settings->maxFramerate,
-            promise));
-    std::future<int32_t> future = promise->get_future();
-    ret = future.get();
-    return ret;
+    width_ = codec_settings->width;
+    height_ = codec_settings->height;
+    target_bitrate_ = codec_settings->target_bitrate;
+    fps_ = codec_settings->maxFramerate;
+
+    input_frame_infos_.clear();
+
+    // the fuck is this?
+    const ConfigFile &basic_config = BeeProxy::instance()->get_basic_configure();
+    if (!open(basic_config)) {
+        return -1;
+    }
+
+    if (!start()) {
+        return -1;
+    }
+
+    return 0;
 }
 
-int32_t MediasoupVideoEncoder::RegisterEncodeCompleteCallback(
-    webrtc::EncodedImageCallback* callback) {
-    std::shared_ptr<std::promise<int32_t> > promise(new std::promise<int32_t>);
-    io_service_->ios()->post(
-        boost::bind(&MediasoupVideoEncoder::RegisterEncodeCompleteCallbackOnCodecThread,
-            this,
-            callback,
-            promise));
-    std::future<int32_t> future = promise->get_future();
-    int32_t ret = future.get();
-    return ret;
+int32_t MediasoupVideoEncoder::RegisterEncodeCompleteCallback(webrtc::EncodedImageCallback* callback) {
+    callback_ = callback;
+
+    return 0;
 }
 
 int32_t MediasoupVideoEncoder::Release() {
-    std::shared_ptr<std::promise<int32_t> > promise(new std::promise<int32_t>);
-    io_service_->ios()->post(
-        boost::bind(&MediasoupVideoEncoder::ReleaseOnCodecThread,
-            this,
-            promise));
-    std::future<int32_t> future = promise->get_future();
-    int32_t ret = future.get();
-
-    if (io_service_ != NULL) {
-        io_service_->stop();
-        io_service_.reset();
+    if (started) {
+        stop();
     }
-    return ret;
+
+    if (opened) {
+        close();
+    }
+
+    return 0;
 }
 
 int32_t MediasoupVideoEncoder::Encode(
     const webrtc::VideoFrame& frame,
-    const webrtc::CodecSpecificInfo* codec_specific_info,
     const std::vector<webrtc::FrameType>* frame_types) {
-    //blog(LOG_INFO, "@@@ Encode");
+
     if (last_encode_error) {
         return -1;
     }
 
-    io_service_->ios()->post(
-        boost::bind(&MediasoupVideoEncoder::EncodeOnCodecThread,
-            this,
-            frame,
-            frame_types->front(),
-            rtc::TimeMillis()));
+    webrt::FrameType = frame_types->front();
+    int64_t = rtc::TimeMillis();
+
+    if (frame_type != webrtc::kVideoFrameDelta) {
+        send_key_frame_ = true;
+    }
+
+    //Just store timestamp, real encoding is bypassed.
+    input_frame_infos_.emplace_back(
+        rtc::TimeMillis(),
+        frame.timestamp(),
+        frame.render_time_ms(),
+        frame.rotation());
+
     return 0;
 }
 
-int32_t MediasoupVideoEncoder::SetChannelParameters(
-    uint32_t packet_loss,
-    int64_t rtt) {
-    return 0;
-}
+void MediasoupVideoEncoder::SetRates(const webrtc::RateControlParameters& parameters) {
+    // TODO
+};
+
+void MediasoupVideoEncoder::OnPacketLossRateUpdate(float packet_loss_rate) {
+    // TODO
+};
+
+void MediasoupVideoEncoder::OnRttUpdate(int64_t rtt_ms) {
+    // TODO
+};
+
+void MediasoupVideoEncoder::OnLossNotification(const webrtc::LossNotification& loss_notification) {
+    // TODO
+};
+
+webrtc::EncoderInfo MediasoupVideoEncoder::GetEncoderInfo() {
+    // TODO
+};
+
 
 bool MediasoupVideoEncoder::start_internal(obs_encoder_t *encoder) {
     struct encoder_callback cb = { false, new_encoded_packet, this };
@@ -464,79 +478,6 @@ void MediasoupVideoEncoder::free_audio_buffers(struct obs_encoder *encoder) {
     }
 }
 
-void MediasoupVideoEncoder::InitEncodeOnCodecThread(
-    int32_t width,
-    int32_t height,
-    int32_t target_bitrate,
-    int32_t fps,
-    std::shared_ptr<std::promise<int32_t> > promise) {
-    int32_t ret = 0;
-    do {
-        width_ = width;
-        height_ = height;
-        target_bitrate_ = target_bitrate;
-        fps_ = fps;
-
-        input_frame_infos_.clear();
-
-        const ConfigFile &basic_config = BeeProxy::instance()->get_basic_configure();
-        if (!open(basic_config)) {
-            ret = -1;
-            break;
-        }
-
-        if (!start()) {
-            ret = -1;
-            break;
-        }
-
-        BeeProxy::instance()->set_video_encoder(this);
-    } while (0);
-
-    if (promise != NULL) {
-        promise->set_value(ret);
-    }
-}
-
-void MediasoupVideoEncoder::RegisterEncodeCompleteCallbackOnCodecThread(
-    webrtc::EncodedImageCallback* callback,
-    std::shared_ptr<std::promise<int32_t> > promise) {
-    callback_ = callback;
-    if (promise != NULL) {
-        promise->set_value(0);
-    }
-}
-
-void MediasoupVideoEncoder::ReleaseOnCodecThread(std::shared_ptr<std::promise<int32_t> > promise) {
-    BeeProxy::instance()->set_video_encoder(NULL);
-
-    if (started) {
-        stop();
-    }
-
-    if (opened) {
-        close();
-    }
-    if (promise != NULL) {
-        promise->set_value(0);
-    }
-}
-
-void MediasoupVideoEncoder::EncodeOnCodecThread(
-    const webrtc::VideoFrame& frame,
-    const webrtc::FrameType frame_type,
-    const int64_t frame_input_time_ms) {
-    if (frame_type != webrtc::kVideoFrameDelta) {
-        send_key_frame_ = true;
-    }
-
-    //Just store timestamp, real encoding is bypassed.
-    input_frame_infos_.emplace_back(
-        frame_input_time_ms,
-        frame.timestamp(),
-        frame.render_time_ms(),
-        frame.rotation());
-}
 
 static const char *receive_video_name = "receive_video";
 void MediasoupVideoEncoder::obs_encode(
