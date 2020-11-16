@@ -103,9 +103,7 @@ private:
         size_t *size);
 
 private:
-    OBSEncoder h264_encoder_;
-    std::shared_ptr<IOService> io_service_;
-    webrtc::EncodedImageCallback* callback_ = NULL;
+    obs_encoder_t *encoder;
     bool opened = false;
     bool started = false;
     bool last_encode_error = false;
@@ -113,6 +111,8 @@ private:
     int32_t height_ = 0;
     int32_t target_bitrate_ = 0;
     int32_t fps_ = 0;
+
+    webrtc::EncodedImageCallback* callback_ = NULL;
     webrtc::H264BitstreamParser h264_bitstream_parser_;
 
     struct InputFrameInfo {

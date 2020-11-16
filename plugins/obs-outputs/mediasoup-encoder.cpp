@@ -375,7 +375,7 @@ void MediasoupVideoEncoder::on_new_encoded_packet(struct encoder_packet *packet)
         info.codecType = codec_type;
 
         if (packet->keyframe) {
-            blog(LOG_INFO, "Key frame");
+            info("Key frame");
         }
 
         // Generate a header describing a single fragment.
